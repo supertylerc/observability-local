@@ -28,6 +28,10 @@ spec:
             config:
               loki:
                 hostport: "http://loki-gateway.loki.svc:80"
+              otlp:
+                traces:
+                  endpoint: "http://tracing-collector.otel.svc:4318/v1/traces"
+                  checkcert: false
           falcoctl:
             artifact:
               install:
