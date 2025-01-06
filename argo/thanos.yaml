@@ -32,6 +32,7 @@ spec:
               password: minio
             secretKey:
               password: minio123
+            resourcesPreset: "none"
           query:
             replicaCount: 1
             extraFlags:
@@ -39,6 +40,7 @@ spec:
             dnsDiscovery:
               sidecarsService: "prometheus-operated"
               sidecarsNamespace: "monitoring"
+            resourcesPreset: "none"
           queryFrontend:
             replicaCount: 1
             extraFlags:
@@ -49,11 +51,12 @@ spec:
             #    addr: 'thanos-redis:6379'
             #    db: 0
             #    expiration: 72h0m0s
+            resourcesPreset: "none"
           compactor:
             enabled: true
             persistence:
               storageClass: local-path
-            resourcesPreset: "micro"
+            resourcesPreset: "none"
           storegateway:
             enabled: true
             persistence:
@@ -68,6 +71,7 @@ spec:
             #    addr: 'thanos-redis:6379'
             #    db: 1
             #    expiration: 72h0m0s
+            resourcesPreset: "none"
           metrics:
             enabled: true
             serviceMonitor:

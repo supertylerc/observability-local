@@ -92,6 +92,7 @@ You should have a Kubernetes cluster running Talos.  It should have the followin
 * cert-manager for OTEL's dependencies
     * NB: Currently not tuned or tested for more general certificate usage
 * harbor for pushing images
+* gitea for a local git repo for hacking on gitops things
 
 ## Poking About
 
@@ -172,3 +173,7 @@ bin  boot  dev  etc  home  lib  media  mnt  opt  proc  root  run  sbin  srv  sys
 #
 pod "debug" deleted
 ```
+
+## local argo dev / gitea
+
+Deployed, dirs TODO
