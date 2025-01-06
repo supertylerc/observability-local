@@ -89,6 +89,7 @@ You should have a Kubernetes cluster running Talos.  It should have the followin
     * NB: Ingress mostly doesn't work without extra hoops, particularly on macOS, but this is still here so that the configuration can be validated
 * cert-manager for OTEL's dependencies
     * NB: Currently not tuned or tested for more general certificate usage
+* harbor for pushing images
 
 ## Poking About
 
@@ -118,3 +119,54 @@ falco-falcosidekick-ui   ClusterIP   10.98.148.77   <none>        2802/TCP   81m
 ```
 
 * Continue exploring/leveraging the tools that are deployed.  Deploy your own.  Go wild.
+
+## Logins
+
+* ArgoCD
+
+Username: `admin`.  Passowrd:
+
+```
+k get secret -n argocd argocd-initial-admin-secret -o yaml | yq -e '.data.password' | base64 -d | pbcopy
+```
+
+* Harbor
+
+Username: `admin`.  Password:
+
+```
+k get secret -n harbor harbor-core-envvars -o yaml | yq -e '.data.HARBOR_ADMIN_PASSWORD' | base64 -d | pbcopy
+```
+
+## Publishing Images
+
+* Login with credentials above:
+
+```
+podman login harbor.harbor.svc
+```
+
+* Build image:
+
+```
+podman build --tag harbor.harbor.svc/library/test-img .
+```
+
+* Push image:
+
+```
+podman push harbor.harbor.svc/library/test-img:latest --tls-verify=false
+```
+
+* Verify you can run a pod from Harbor:
+
+```
+❯ k run -it --rm debug --image=harbor.harbor.svc/library/test-img --restart=Never -- sh
+Warning: would violate PodSecurity "restricted:latest": allowPrivilegeEscalation != false (container "debug" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container "debug" must set securityContext.capabilities.drop=["ALL"]), runAsNonRoot != true (pod or container "debug" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container "debug" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+If you don't see a command prompt, try pressing enter.
+
+# ls
+bin  boot  dev  etc  home  lib  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+#
+pod "debug" deleted
+```

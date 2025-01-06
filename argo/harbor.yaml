@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: harbor
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/background
+spec:
+  project: default
+  sources:
+    - chart: harbor
+      repoURL: registry-1.docker.io/bitnamicharts
+      targetRevision: 24.*
+      helm:
+        releaseName: harbor
+        valuesObject:
+          externalURL: "http://harbor.harbor.svc"
+          adminPassword: changeme
+          persistence:
+            persistentVolumeClaim:
+              registry:
+                size: 8Gi
+          redis:
+            master:
+              resourcesPreset: "none"
+          postgresql:
+            primary:
+              resourcesPreset: "none"
+          certificateVolume:
+            resourcesPreset: "none"
+          volumePermissions:
+            resourcesPreset: "none"
+          nginx:
+            resourcesPreset: "none"
+          core:
+            resourcesPreset: "none"
+          portal:
+            resourcesPreset: "none"
+          trivy:
+            resourcesPreset: "none"
+          jobservice:
+            resourcesPreset: "none"
+          registry:
+            server:
+              resourcesPreset: "none"
+          registry:
+            controller:
+              resourcesPreset: "none"
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      jqPathExpressions:
+        - .spec.volumeClaimTemplates[].kind
+        - .spec.volumeClaimTemplates[].apiVersion
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: harbor
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+      - ServerSideApply=true

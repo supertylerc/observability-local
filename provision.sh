@@ -11,7 +11,8 @@ talosctl cluster create \
     --cpus 3.0 \
     --cpus-workers 3.0 \
     --config-patch @all-nodes-patch.yaml \
-    --config-patch-control-plane @control-plane-patch.yaml
+    --config-patch-control-plane @control-plane-patch.yaml \
+    --registry-insecure-skip-verify harbor.harbor.svc
 
 echo "Waiting for ArgoCD"
 until kubectl get job -n kube-system argocd-install -o json | jq -e '.status.succeeded==1' > /dev/null; do
@@ -29,7 +30,7 @@ for fname in argo/*yaml; do
 done
 
 echo "Waiting for ArgoCD Main Apps to Finish"
-until [[ $(k get app -n argocd | grep -cv "Synced.*Healthy\|NAME") = 0 ]]; do
+until [[ $(kubectl get app -n argocd | grep -cv "Synced.*Healthy\|NAME") = 0 ]]; do
     sleep 5
     echo "Still waiting for ArgoCD Main Apps to Finish..."
 done
