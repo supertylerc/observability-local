@@ -2,6 +2,8 @@
 
 Uses `talos cluster create` to create a cluster in Docker, podman, etc.
 
+> NB: Only tested on ARM macOS w/ Podman/Podman Desktop.  Instructions probably incompletely, definitely lacking.
+
 ## Important ENV Vars
 
 The following environment variables have the following effects:
