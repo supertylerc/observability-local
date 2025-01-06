@@ -1,0 +1,93 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/background
+spec:
+  project: default
+  sources:
+    - chart: kube-prometheus-stack
+      repoURL: https://prometheus-community.github.io/helm-charts
+      targetRevision: 67.*
+      helm:
+        releaseName: kube-prometheus-stack
+        valuesObject:
+          prometheus-node-exporter:
+            podAnnotations:
+          prometheus:
+            prometheusSpec:    
+              paused: false
+              securityContext:
+                runAsUser: 0
+                runAsNonRoot: false
+                runAsGroup: 0
+                fsGroup: 0
+              storageSpec: 
+                volumeClaimTemplate:
+                  spec:
+                    storageClassName: local-path
+                    accessModes: ["ReadWriteOnce"]
+                    resources:
+                      requests:
+                        storage: 4Gi
+              thanos:
+                objectStorageConfig:
+                  secret:
+                    type: s3
+                    config:
+                      bucket: thanos
+                      endpoint: thanos-minio.thanos.svc.cluster.local:9000
+                      access_key: minio
+                      secret_key: minio123
+                      insecure: true
+              thanosService:
+                enabled: true
+              thanosServiceMonitor:
+                enabled: true
+          alertmanager:
+            alertmanagerSpec:
+              alertmanagerConfigMatcherStrategy:
+                type: None
+          defaultRules:
+            rules:
+              kubeProxy: false
+          grafana:
+            sidecar:
+              datasources:
+                defaultDatasourceEnabled: false
+            deleteDatasources:
+              - name: Prometheus
+            additionalDataSources:
+              - name: thanos
+                type: prometheus
+                url: "http://thanos-query-frontend.thanos.svc:9090"
+                uid: thanos
+                isDefault: true
+                jsonData:
+                  prometheusType: "Thanos"
+              - name: loki
+                type: loki
+                url: "http://loki-gateway.loki.svc:80"
+                uid: loki
+                isDefault: false
+              - name: tempo
+                type: tempo
+                url: "http://tempo.tempo.svc:3100"
+                uid: tempo
+                isDefault: false
+          kubeEtcd:
+            enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+      - ServerSideApply=true

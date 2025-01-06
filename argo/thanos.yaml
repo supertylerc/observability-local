@@ -1,0 +1,93 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: thanos
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/background
+spec:
+  project: default
+  sources:
+    - chart: thanos
+      repoURL: registry-1.docker.io/bitnamicharts
+      targetRevision: 15.*
+      helm:
+        releaseName: thanos
+        valuesObject:
+          objstoreConfig: |-
+            type: s3
+            config:
+              bucket: thanos
+              endpoint: {{ include "thanos.minio.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:9000
+              access_key: minio
+              secret_key: minio123
+              insecure: true
+          minio:
+            enabled: true
+            auth:
+              rootPassword: minio123
+              rootUser: minio
+            monitoringBuckets: thanos
+            accessKey:
+              password: minio
+            secretKey:
+              password: minio123
+          query:
+            replicaCount: 1
+            extraFlags:
+              - --query.promql-engine=thanos
+            dnsDiscovery:
+              sidecarsService: "prometheus-operated"
+              sidecarsNamespace: "monitoring"
+          queryFrontend:
+            replicaCount: 1
+            extraFlags:
+              - '--query-frontend.downstream-tripper-config="max_idle_conns_per_host": 100'
+            #config: |-
+            #  type: REDIS
+            #  config:
+            #    addr: 'thanos-redis:6379'
+            #    db: 0
+            #    expiration: 72h0m0s
+          compactor:
+            enabled: true
+            persistence:
+              storageClass: local-path
+            resourcesPreset: "micro"
+          storegateway:
+            enabled: true
+            persistence:
+              storageClass: local-path
+            sharded:
+              enabled: true
+              hashPartitioning:
+                shards: 1
+            #config: |-
+            #  type: REDIS
+            #  config:
+            #    addr: 'thanos-redis:6379'
+            #    db: 1
+            #    expiration: 72h0m0s
+          metrics:
+            enabled: true
+            serviceMonitor:
+              enabled: true
+              labels:
+                prometheus: thanos
+  #ignoreDifferences:
+  #  - group: apps
+  #    kind: StatefulSet
+  #    jqPathExpressions:
+  #      - .spec.volumeClaimTemplates[].kind
+  #      - .spec.volumeClaimTemplates[].apiVersion
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: thanos
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+      - ServerSideApply=true

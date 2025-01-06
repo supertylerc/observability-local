@@ -1,0 +1,296 @@
+machine:
+  files:
+    - content: |
+        ---
+        apiVersion: v1
+        kind: Config
+        clusters:
+        - name: falco
+          cluster:
+            server: http://falco-k8saudit-webhook.falco.svc.cluster.local:9765/k8s-audit
+        contexts:
+        - context:
+            cluster: falco
+            user: ""
+          name: default-context
+        current-context: default-context
+        preferences: {}
+        users: []
+      permissions: 0o444
+      path: /var/custom/audit-webhook-config.yaml
+      op: create
+cluster:
+  apiServer:
+    admissionControl:
+      - name: PodSecurity
+        configuration:
+          exemptions:
+            namespaces:
+              - falco
+              - beyla
+              - cilium
+              - monitoring
+              - otel
+    extraArgs:
+      audit-webhook-config-file: /var/custom/audit-webhook-config.yaml
+    extraVolumes:
+      - hostPath: /var/custom/audit-webhook-config.yaml
+        mountPath: /var/custom/audit-webhook-config.yaml
+        readonly: true
+  inlineManifests:
+    - name: namespaces
+      contents: |
+        ---
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: cilium
+          annotations:
+            pod-security.kubernetes.io/enforce: privileged
+            pod-security.kubernetes.io/audit: privileged
+            pod-security.kubernetes.io/warn: privileged
+        ---
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: argocd
+        ---
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: otel
+    - name: otel-collector-rbac
+      contents: |
+        ---
+        apiVersion: v1
+        kind: ServiceAccount
+        metadata:
+          name: collector
+          namespace: otel
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRole
+        metadata:
+          name: otel-collector
+        rules:
+        - apiGroups: [""]
+          resources: ["pods", "namespaces", "nodes"]
+          verbs: ["get", "watch", "list"]
+        - apiGroups: ["apps"]
+          resources: ["replicasets"]
+          verbs: ["get", "list", "watch"]
+        - apiGroups: ["extensions"]
+          resources: ["replicasets"]
+          verbs: ["get", "list", "watch"]
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: otel-collector
+        subjects:
+        - kind: ServiceAccount
+          name: collector
+          namespace: otel
+        roleRef:
+          kind: ClusterRole
+          name: otel-collector
+          apiGroup: rbac.authorization.k8s.io
+    - name: helm-install-rbac
+      contents: |
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: helm-install
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: cluster-admin
+        subjects:
+        - kind: ServiceAccount
+          name: helm-install
+          namespace: kube-system
+        ---
+        apiVersion: v1
+        kind: ServiceAccount
+        metadata:
+          name: helm-install
+          namespace: kube-system
+    - name: cilium-install-job
+      contents: |
+        ---
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: cilium-install
+          namespace: kube-system
+        spec:
+          backoffLimit: 10
+          template:
+            metadata:
+              labels:
+                app: cilium-install
+            spec:
+              restartPolicy: OnFailure
+              tolerations:
+                - operator: Exists
+                - effect: NoSchedule
+                  operator: Exists
+                - effect: NoExecute
+                  operator: Exists
+                - effect: PreferNoSchedule
+                  operator: Exists
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                  effect: NoSchedule
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                  effect: NoExecute
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                  effect: PreferNoSchedule
+              affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                      - matchExpressions:
+                          - key: node-role.kubernetes.io/control-plane
+                            operator: Exists
+              serviceAccount: helm-install
+              serviceAccountName: helm-install
+              hostNetwork: true
+              containers:
+              - name: cilium-install
+                image: quay.io/cilium/cilium-cli-ci:latest
+                env:
+                - name: KUBERNETES_SERVICE_HOST
+                  valueFrom:
+                    fieldRef:
+                      apiVersion: v1
+                      fieldPath: status.podIP
+                - name: KUBERNETES_SERVICE_PORT
+                  value: "6443"
+                command:
+                  - cilium
+                  - install
+                  - --wait
+                  - --namespace
+                  - cilium
+                  - --set
+                  - ipam.mode=kubernetes
+                  - --set
+                  - kubeProxyReplacement=true
+                  - --set
+                  - securityContext.capabilities.ciliumAgent={CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}
+                  - --set
+                  - securityContext.capabilities.cleanCiliumState={NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}
+                  - --set
+                  - cgroup.autoMount.enabled=false
+                  - --set
+                  - cgroup.hostRoot=/sys/fs/cgroup
+                  - --set
+                  - k8sServiceHost=localhost
+                  - --set
+                  - k8sServicePort=7445
+                  - --set
+                  - externalIPs.enabled=true
+                  - --set
+                  - nodePort.enabled=true
+                  - --set
+                  - hostPort.enabled=true
+                  - --set
+                  - l2announcements.enabled=true
+    - name: cilium-lb-manifests
+      contents: |
+        ---
+        apiVersion: "cilium.io/v2alpha1"
+        kind: CiliumL2AnnouncementPolicy
+        metadata:
+          name: lab
+        spec:
+          nodeSelector:
+            matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: DoesNotExist
+          externalIPs: true
+          loadBalancerIPs: true
+        ---
+        apiVersion: "cilium.io/v2alpha1"
+        kind: CiliumLoadBalancerIPPool
+        metadata:
+          name: "lab"
+        spec:
+          blocks:
+          - start: "10.5.0.50"
+            stop: "10.5.0.99"
+    - name: argocd-install
+      contents: |
+        ---
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: argocd-install
+          namespace: kube-system
+        spec:
+          backoffLimit: 10
+          template:
+            metadata:
+              labels:
+                app: argocd-install
+            spec:
+              restartPolicy: OnFailure
+              tolerations:
+                - operator: Exists
+                - effect: NoSchedule
+                  operator: Exists
+                - effect: NoExecute
+                  operator: Exists
+                - effect: PreferNoSchedule
+                  operator: Exists
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                  effect: NoSchedule
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                  effect: NoExecute
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
+                  effect: PreferNoSchedule
+              affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                      - matchExpressions:
+                          - key: node-role.kubernetes.io/control-plane
+                            operator: Exists
+              serviceAccount: helm-install
+              serviceAccountName: helm-install
+              hostNetwork: true
+              containers:
+              - name: argocd-install
+                image: alpine/helm:latest
+                env:
+                - name: KUBERNETES_SERVICE_HOST
+                  valueFrom:
+                    fieldRef:
+                      apiVersion: v1
+                      fieldPath: status.podIP
+                - name: KUBERNETES_SERVICE_PORT
+                  value: "6443"
+                command:
+                  - helm
+                  - upgrade
+                  - --install
+                  - --wait
+                  - --namespace
+                  - argocd
+                  - --repo
+                  - https://argoproj.github.io/argo-helm
+                  - argocd
+                  - argo-cd
+                  - --set
+                  - global.domain=argocd.local
+                  - --set
+                  - configs.cm."kustomize\.buildOptions"="--enable-helm"
+                  - --set
+                  - configs.params."server\.insecure"=true

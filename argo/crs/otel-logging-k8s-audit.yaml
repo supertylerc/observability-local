@@ -1,0 +1,54 @@
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: logging-k8s-audit
+  namespace: otel
+spec:
+  serviceAccount: "collector"
+  mode: daemonset
+  tolerations:
+    - key: ""
+      operator: Exists
+      effect: "NoSchedule"
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+  securityContext:
+    runAsGroup: 0
+    runAsUser: 0
+  volumeMounts:
+    - mountPath: /var/log
+      name: varlog
+      readOnly: true
+  volumes:
+    - hostPath:
+        path: /var/log
+      name: varlog
+  config:
+    receivers:
+      filelog/pod_logs:
+        include_file_name: true
+        include_file_path: true
+        include:
+          - /var/log/audit/kube/*.log
+        start_at: beginning
+        operators:
+          - id: container-parser
+            type: container
+    processors:
+      memory_limiter:
+        check_interval: 2s
+        limit_percentage: 80
+        spike_limit_percentage: 20
+      batch: {}
+    exporters:
+      debug:
+        verbosity: detailed
+      otlphttp/loki:
+        endpoint: "http://loki-gateway.loki.svc:80/otlp"
+    service:
+      pipelines:
+        logs:
+          receivers: [filelog/pod_logs]
+          processors: [memory_limiter,batch]
+          exporters: [otlphttp/loki]
