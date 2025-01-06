@@ -125,6 +125,14 @@ falco-falcosidekick-ui   ClusterIP   10.98.148.77   <none>        2802/TCP   81m
 
 ## Logins
 
+* Grafana
+
+Username: `admin`.  Password:
+
+```
+k get secret -n monitoring kube-prometheus-stack-grafana -o yaml | yq -e '.data.admin-password' | base64 -d | pbcopy
+```
+
 * ArgoCD
 
 Username: `admin`.  Passowrd:
@@ -140,6 +148,14 @@ Username: `admin`.  Password:
 ```
 k get secret -n harbor harbor-core-envvars -o yaml | yq -e '.data.HARBOR_ADMIN_PASSWORD' | base64 -d | pbcopy
 ```
+
+* Gitea
+
+Username: `admin`.  Password: `admin`.
+
+* Falco Sidekick
+
+Username: `admin`.  Password: `admin`.
 
 ## Publishing Images
 
