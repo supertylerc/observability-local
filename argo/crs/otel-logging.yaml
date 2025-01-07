@@ -5,6 +5,11 @@ metadata:
   name: logging
   namespace: otel
 spec:
+  env:
+    - name: MY_POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
   serviceAccount: "collector"
   mode: daemonset
   tolerations:
@@ -21,6 +26,12 @@ spec:
       name: varlog
   config:
     receivers:
+      udplog:
+        listen_address: "${env:MY_POD_IP}:54525"
+        operators:
+          - type: add
+            field: resource.attributes["service.name"]
+            value: body["talos-service"]
       filelog/pod_logs:
         include_file_name: true
         include_file_path: true
@@ -109,6 +120,6 @@ spec:
     service:
       pipelines:
         logs:
-          receivers: [filelog/pod_logs]
+          receivers: [filelog/pod_logs, udplog]
           processors: [memory_limiter,k8sattributes,batch]
           exporters: [otlphttp/loki]  
