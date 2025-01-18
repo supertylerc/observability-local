@@ -32,7 +32,13 @@ spec:
               password: minio
             secretKey:
               password: minio123
-            resourcesPreset: "none"
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                cpu: 100m
+                memory: 256Mi
           query:
             replicaCount: 1
             extraFlags:
@@ -40,7 +46,13 @@ spec:
             dnsDiscovery:
               sidecarsService: "prometheus-operated"
               sidecarsNamespace: "monitoring"
-            resourcesPreset: "none"
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 100m
+                memory: 128Mi
           queryFrontend:
             replicaCount: 1
             extraFlags:
@@ -51,12 +63,24 @@ spec:
             #    addr: 'thanos-redis:6379'
             #    db: 0
             #    expiration: 72h0m0s
-            resourcesPreset: "none"
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 100m
+                memory: 128Mi
           compactor:
             enabled: true
             persistence:
               storageClass: local-path
-            resourcesPreset: "none"
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 100m
+                memory: 128Mi
           storegateway:
             enabled: true
             persistence:
@@ -71,7 +95,14 @@ spec:
             #    addr: 'thanos-redis:6379'
             #    db: 1
             #    expiration: 72h0m0s
-            resourcesPreset: "none"
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 100m
+                memory: 128Mi
+
           metrics:
             enabled: true
             serviceMonitor:

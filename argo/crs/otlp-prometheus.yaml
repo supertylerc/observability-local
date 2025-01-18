@@ -1,0 +1,101 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  labels:
+    app: otlp-prometheus-prometheus
+    app.kubernetes.io/name: otlp-prometheus
+  name: otlp-prometheus
+  namespace: monitoring
+spec:
+  enableFeatures:
+    - exemplar-storage
+  enableOTLPReceiver: true
+  otlp:
+    #keepIdentifyingResourceAttributes: true
+    promoteResourceAttributes:
+      - service.instance.id
+      - service.name
+      - service.namespace
+      - cloud.availability_zone
+      - cloud.region
+      - container.name
+      - deployment.environment.name
+      - k8s.cluster.name
+      - k8s.container.name
+      - k8s.cronjob.name
+      - k8s.daemonset.name
+      - k8s.deployment.name
+      - k8s.job.name
+      - k8s.namespace.name
+      - k8s.pod.name
+      - k8s.replicaset.name
+      - k8s.statefulset.name
+  alerting:
+    alertmanagers:
+    - apiVersion: v2
+      name: kube-prometheus-stack-alertmanager
+      namespace: monitoring
+      pathPrefix: /
+      port: http-web
+  automountServiceAccountToken: true
+  enableAdminAPI: false
+  evaluationInterval: 30s
+  externalUrl: http://otlp-prometheus.monitoring.svc:9090
+  hostNetwork: false
+  listenLocal: false
+  logFormat: logfmt
+  logLevel: info
+  paused: false
+  podMonitorNamespaceSelector: {}
+  podMonitorSelector:
+    matchLabels:
+      app: otlp-prometheus
+  portName: http-web
+  probeNamespaceSelector: {}
+  probeSelector:
+    matchLabels:
+      app: otlp-prometheus
+  replicas: 1
+  retention: 10d
+  routePrefix: /
+  ruleNamespaceSelector: {}
+  ruleSelector:
+    matchLabels:
+      app: otlp-prometheus
+  scrapeConfigNamespaceSelector: {}
+  scrapeConfigSelector:
+    matchLabels:
+      app: otlp-prometheus
+  scrapeInterval: 5s
+  scrapeTimeout: 3s
+  securityContext:
+    fsGroup: 0
+    runAsGroup: 0
+    runAsNonRoot: false
+    runAsUser: 0
+    seccompProfile:
+      type: RuntimeDefault
+  serviceAccountName: kube-prometheus-stack-prometheus
+  serviceMonitorNamespaceSelector: {}
+  serviceMonitorSelector:
+    matchLabels:
+      app: otlp-prometheus
+  shards: 1
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 4Gi
+        storageClassName: local-path
+  thanos:
+    blockSize: 2h
+    objectStorageConfig:
+      key: object-storage-configs.yaml
+      name: kube-prometheus-stack-prometheus
+  tsdb:
+    outOfOrderTimeWindow: 30m
+  version: v3.1.0
+  walCompression: true

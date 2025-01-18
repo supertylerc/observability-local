@@ -292,5 +292,3 @@ cluster:
                   - global.domain=argocd.local
                   - --set
                   - configs.cm."kustomize\.buildOptions"="--enable-helm"
-                  - --set
-                  - configs.params."server\.insecure"=true

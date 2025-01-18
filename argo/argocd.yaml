@@ -1,0 +1,85 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/background
+spec:
+  project: default
+  sources:
+    - chart: argo-cd
+      repoURL: https://argoproj.github.io/argo-helm
+      targetRevision: 7.*
+      helm:
+        releaseName: argocd
+        valuesObject:
+          applicationSet:
+            resources:
+              requests:
+                cpu: 10m
+                memory: 24Mi
+              limits:
+                cpu: 50m
+                memory: 48Mi
+          controller:
+            resources:
+              requests:
+                cpu: 75m
+                memory: 384Mi
+              limits:
+                cpu: 400m
+                memory: 768Mi
+          redis:
+            resources:
+              requests:
+                cpu: 25m
+                memory: 12Mi
+              limits:
+                cpu: 75m
+                memory: 24Mi
+          repoServer:
+            resources:
+              requests:
+                cpu: 75m
+                memory: 128Mi
+              limits:
+                cpu: 150m
+                memory: 512Mi
+          server:
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                cpu: 50m
+                memory: 64Mi
+          dex:
+            enabled: false
+          notifications:
+            enabled: false
+          global:
+            domain: argocd.local
+          configs:
+            cm:
+              kustomize.buidOptions: --enable-helm
+              resource.exclusions: |
+                - apiGroups:
+                  - cilium.io
+                  kinds:
+                  - CiliumIdentity
+                  clusters:
+                  - "*"
+            params:
+              otlp.address: "otel-tracing.otel.svc:4317"
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true

@@ -7,6 +7,15 @@ metadata:
 spec:
   serviceAccount: "collector"
   mode: daemonset
+  env:
+    - name: GOMAXPROCS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+    - name: GOMEMLIMIT
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.memory
   tolerations:
     - key: ""
       operator: Exists
@@ -24,6 +33,13 @@ spec:
     - hostPath:
         path: /var/log
       name: varlog
+  resources:
+    requests:
+      cpu: 150m
+      memory: 96Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
   config:
     receivers:
       filelog/pod_logs:

@@ -1,0 +1,42 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-demo
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/background
+spec:
+  project: default
+  sources:
+    - chart: opentelemetry-demo
+      repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+      targetRevision: 0.33.*
+      helm:
+        releaseName: otel-demo
+        valuesObject:
+          default:
+            envOverrides:
+              - name: OTEL_COLLECTOR_NAME
+                value: tracing-collector.otel.svc
+          opentelemetry-collector:
+            enabled: false
+          jaeger:
+            enabled: false
+          prometheus:
+            enabled: false
+          grafana:
+            enabled: false
+          opensearch:
+            enabled: false
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: otel-demo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+

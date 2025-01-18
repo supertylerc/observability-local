@@ -6,6 +6,14 @@ metadata:
   namespace: otel
 spec:
   env:
+    - name: GOMAXPROCS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+    - name: GOMEMLIMIT
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.memory
     - name: MY_POD_IP
       valueFrom:
         fieldRef:
@@ -24,6 +32,13 @@ spec:
     - hostPath:
         path: /var/log
       name: varlog
+  resources:
+    requests:
+      cpu: 75m
+      memory: 64Mi
+    limits:
+      cpu: 150m
+      memory: 256Mi
   config:
     receivers:
       udplog:

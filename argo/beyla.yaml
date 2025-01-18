@@ -1,0 +1,46 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: beyla
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/background
+spec:
+  project: default
+  sources:
+    - chart: beyla
+      repoURL: https://grafana.github.io/helm-charts
+      targetRevision: 1.*
+      helm:
+        releaseName: beyla
+        valuesObject:
+          resources:
+            requests:
+              cpu: 75m
+              memory: 256Mi
+            limits:
+              cpu: 250m
+              memory: 512Mi
+          service:
+            enabled: true
+          serviceMonitor:
+            enabled: true
+            additionalLabels:
+              app: beyla
+          env:
+            OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://tracing-collector.otel.svc:4318/v1/traces
+            BEYLA_OTEL_INSECURE_SKIP_VERIFY: true
+            BEYLA_OTEL_METRICS_FEATURES: application_span,application,application_service_graph,application_process
+            BEYLA_KUBE_METADATA_ENABLE: true
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: beyla
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+

@@ -1,0 +1,62 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: forgejo
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/background
+spec:
+  project: default
+  sources:
+    - chart: forgejo
+      repoURL: code.forgejo.org/forgejo-helm
+      targetRevision: 10.*
+      helm:
+        releaseName: forgejo
+        valuesObject:
+          resources:
+            requests:
+              cpu: 25m
+              memory: 96Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          redis-cluster:
+            enabled: false
+          redis:
+            enabled: false
+          postgresql:
+            enabled: false
+          postgresql-ha:
+            enabled: false
+          persistence:
+            enabled: false
+          gitea:
+            config:
+              database:
+                DB_TYPE: sqlite3
+              session:
+                PROVIDER: memory
+              cache:
+                ADAPTER: memory
+              queue:
+                TYPE: level
+            admin:
+              username: root
+              password: root
+              email: root@example.com
+            metrics:
+              enabled: true
+              serviceMonitor:
+                enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: forgejo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+      - ServerSideApply=true

@@ -1,8 +1,8 @@
----
-apiVersion: v1alpha1
-kind: KmsgLogConfig
-name: kernel-log
-url: "udp://logging-collector.otel.svc.cluster.local:54525/"
+#---
+#apiVersion: v1alpha1
+#kind: KmsgLogConfig
+#name: kernel-log
+#url: "udp://logging-collector.otel.svc.cluster.local:54525/"
 ---
 cluster:
   network:
@@ -10,7 +10,8 @@ cluster:
       name: none
   proxy:
     disabled: true
-  logging:
-    destinations:
-      - endpoint: "udp://logging-collector.otel.svc.cluster.local:54525/"
-        format: "json_lines"
+#machine:
+#  logging:
+#    destinations:
+#      - endpoint: "udp://logging-collector.otel.svc.cluster.local:54525/"
+#        format: "json_lines"

@@ -78,6 +78,17 @@ spec:
                 url: "http://tempo.tempo.svc:3100"
                 uid: tempo
                 isDefault: false
+                jsonData:
+                  tracesToLogsV2:
+                    datasourceUid: 'loki'
+                  tracesToMetrics:
+                    datasourceUid: 'thanos'
+                  serviceMap:
+                    datasourceUid: 'thanos'
+                  nodeGraph:
+                    enabled: true
+                  #streamingEnabled:
+                  #  search: true
           kubeEtcd:
             enabled: false
   destination:

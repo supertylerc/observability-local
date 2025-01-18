@@ -21,6 +21,13 @@ spec:
             - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
               paths:
                 - /var/local-path-provisioner
+          resources:
+            requests:
+              cpu: 25m
+              memory: 8Mi
+            limits:
+              cpu: 75m
+              memory: 24Mi
   destination:
     server: "https://kubernetes.default.svc"
     namespace: kube-system

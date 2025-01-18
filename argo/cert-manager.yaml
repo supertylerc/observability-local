@@ -21,6 +21,13 @@ spec:
             enabled: true
             servicemonitor:
               enabled: true
+          resources:
+            requests:
+              cpu: 25m
+              memory: 16Mi
+            limits:
+              cpu: 75m
+              memory: 32Mi
   destination:
     server: "https://kubernetes.default.svc"
     namespace: cert-manager

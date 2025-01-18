@@ -24,10 +24,11 @@ echo "Deleting SA and CRB with elevated privileges"
 kubectl delete sa helm-install -n kube-system
 kubectl delete clusterrolebinding helm-install
 
-echo "Creating ArogCD Main Apps"
-for fname in argo/*yaml; do
-    kubectl apply -f $fname
-done
+kubectl apply -f argo/otel-demo.yaml
+#echo "Creating ArogCD Main Apps"
+#for fname in argo/*yaml; do
+#    kubectl apply -f $fname
+#done
 
 echo "Waiting for ArgoCD Main Apps to Finish"
 until [[ $(kubectl get app -n argocd | grep -cv "Synced.*Healthy\|NAME") = 0 ]]; do
@@ -35,7 +36,7 @@ until [[ $(kubectl get app -n argocd | grep -cv "Synced.*Healthy\|NAME") = 0 ]];
     echo "Still waiting for ArgoCD Main Apps to Finish..."
 done
 
-echo "Install ArgoCD Apps That Needed CRDs from Main Apps"
-for fname in argo/crs/*yaml; do
-    kubectl apply -f $fname
-done
+#echo "Install ArgoCD Apps That Needed CRDs from Main Apps"
+#for fname in argo/crs/*yaml; do
+#    kubectl apply -f $fname
+#done

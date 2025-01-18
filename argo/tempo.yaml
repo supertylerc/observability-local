@@ -14,6 +14,20 @@ spec:
       targetRevision: 1.*
       helm:
         releaseName: tempo
+        valuesObject:
+          tempo:
+            resources:
+              requests:
+                cpu: 10m
+                memory: 128Mi
+              limits:
+                cpu: 2000m
+                memory: 2048Mi
+            extraEnv:
+              - name: GOMAXPROCS
+                valueFrom:
+                  resourceFieldRef:
+                    resource: limits.cpu
   destination:
     server: "https://kubernetes.default.svc"
     namespace: tempo

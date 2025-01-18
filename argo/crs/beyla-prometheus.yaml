@@ -1,0 +1,78 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  labels:
+    app: beyla-prometheus
+    app.kubernetes.io/name: beyla-prometheus
+  name: beyla-prometheus
+  namespace: monitoring
+spec:
+  affinity:
+  alerting:
+    alertmanagers:
+    - apiVersion: v2
+      name: kube-prometheus-stack-alertmanager
+      namespace: monitoring
+      pathPrefix: /
+      port: http-web
+  automountServiceAccountToken: true
+  enableAdminAPI: false
+  evaluationInterval: 30s
+  externalUrl: http://beyla-prometheus.monitoring:9090
+  hostNetwork: false
+  listenLocal: false
+  logFormat: logfmt
+  logLevel: info
+  paused: false
+  podMonitorNamespaceSelector: {}
+  podMonitorSelector:
+    matchLabels:
+      app: beyla
+  portName: http-web
+  probeNamespaceSelector: {}
+  probeSelector:
+    matchLabels:
+      app: beyla
+  replicas: 1
+  retention: 10d
+  routePrefix: /
+  ruleNamespaceSelector: {}
+  ruleSelector:
+    matchLabels:
+      app: beyla
+  scrapeConfigNamespaceSelector: {}
+  scrapeConfigSelector:
+    matchLabels:
+      app: beyla
+  scrapeInterval: 30s
+  securityContext:
+    fsGroup: 0
+    runAsGroup: 0
+    runAsNonRoot: false
+    runAsUser: 0
+    seccompProfile:
+      type: RuntimeDefault
+  serviceAccountName: kube-prometheus-stack-prometheus
+  serviceMonitorNamespaceSelector: {}
+  serviceMonitorSelector:
+    matchLabels:
+      app: beyla
+  shards: 1
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 4Gi
+        storageClassName: local-path
+  thanos:
+    blockSize: 2h
+    objectStorageConfig:
+      key: object-storage-configs.yaml
+      name: kube-prometheus-stack-prometheus
+  tsdb:
+    outOfOrderTimeWindow: 0s
+  version: v3.1.0
+  walCompression: true

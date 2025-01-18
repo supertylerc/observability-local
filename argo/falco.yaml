@@ -17,14 +17,42 @@ spec:
         valuesObject:
           driver:
             kind: modern_ebpf
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
           falcosidekick:
             enabled: true
             replicaCount: 1
+            resources:
+              requests:
+                cpu: 25m
+                memory: 16Mi
+              limits:
+                cpu: 75m
+                memory: 32Mi
             webui:
               enabled: true
               replicaCount: 1
               redis:
                 storageEnabled: false
+                resources:
+                  requests:
+                    cpu: 25m
+                    memory: 128Mi
+                  limits:
+                    cpu: 75m
+                    memory: 192Mi
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 8Mi
+                limits:
+                  cpu: 75m
+                  memory: 32Mi
             config:
               loki:
                 hostport: "http://loki-gateway.loki.svc:80"
